@@ -20,6 +20,11 @@ def select_transcript(
         YouTube offers that translation) and, failing that, to any available
         transcript. Without this flag `NoTranscriptFound` is raised, as before.
     """
+    if exclude_generated and exclude_manually_created:
+        raise ValueError(
+            "exclude_generated and exclude_manually_created cannot both be set: "
+            "that would exclude every transcript"
+        )
     languages = list(languages)
     try:
         if exclude_manually_created:

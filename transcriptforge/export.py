@@ -64,12 +64,28 @@ def save_many(
     directory: Union[str, Path],
     formats: Sequence[str] = ("text",),
 ) -> List[Path]:
-    """Saves every transcript in every requested format."""
-    return [
-        save_transcript(transcript, directory, fmt)
-        for transcript in transcripts
-        for fmt in formats
-    ]
+    """
+    Saves every transcript in every requested format.
+
+    Formats that share a file extension (``text``, ``paragraphs``, ``timestamped`` and
+    ``pretty`` are all ``.txt``) get the format name in the file name
+    (``<id>.<lang>.timestamped.txt``) instead of silently overwriting each other.
+    """
+    formats = list(dict.fromkeys(formats))
+    extension_use: dict = {}
+    for fmt in formats:
+        extension = FORMAT_EXTENSIONS.get(fmt, "txt")
+        extension_use[extension] = extension_use.get(extension, 0) + 1
+    paths: List[Path] = []
+    for transcript in transcripts:
+        for fmt in formats:
+            filename = None
+            if extension_use[FORMAT_EXTENSIONS.get(fmt, "txt")] > 1:
+                filename = "{}.{}.{}".format(
+                    _safe(transcript.video_id), _safe(transcript.language_code), fmt
+                )
+            paths.append(save_transcript(transcript, directory, fmt, filename))
+    return paths
 
 
 def write_report_csv(report: BatchReport, path: Union[str, Path]) -> Path:
@@ -103,6 +119,8 @@ def make_zip(
 ) -> Path:
     """Zips a directory (or a single file) and returns the path of the archive."""
     source = Path(source)
+    if not source.name:  # "." or ".." have no usable name
+        source = source.resolve()
     zip_path = (
         Path(zip_path)
         if zip_path

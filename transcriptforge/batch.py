@@ -127,6 +127,7 @@ def fetch_many(
     video_ids = list(video_ids)
     languages = list(languages)
     workers = max(1, int(workers))
+    retries = max(0, int(retries))
     pool = list(proxy_pool) if proxy_pool else []
     local = threading.local()
     counter_lock = threading.Lock()

@@ -235,12 +235,11 @@ class TestTranscriptForgeCli(TestCase):
         self.assertFalse(parsed_args.exclude_manually_created)
         self.assertTrue(parsed_args.exclude_generated)
 
-        parsed_args = TranscriptForgeCli(
-            "v1 v2 --exclude-manually-created --exclude-generated".split()
-        )._parse_args()
-        self.assertEqual(parsed_args.video_ids, ["v1", "v2"])
-        self.assertTrue(parsed_args.exclude_manually_created)
-        self.assertTrue(parsed_args.exclude_generated)
+        # both flags together are rejected during parsing
+        with self.assertRaises(SystemExit):
+            TranscriptForgeCli(
+                "v1 v2 --exclude-manually-created --exclude-generated".split()
+            )._parse_args()
 
     def test_run(self):
         TranscriptForgeCli("v1 v2 --languages de en".split()).run()
@@ -274,12 +273,12 @@ class TestTranscriptForgeCli(TestCase):
         )
 
     def test_run__exclude_manually_created_and_generated(self):
-        self.assertEqual(
+        # used to return "" silently (exit code 0); it is now a clear usage error
+        with self.assertRaises(SystemExit) as raised:
             TranscriptForgeCli(
                 "v1 v2 --languages de en --exclude-manually-created --exclude-generated".split()
-            ).run(),
-            "",
-        )
+            ).run()
+        self.assertEqual(raised.exception.code, 2)
 
     def test_run__translate(self):
         (TranscriptForgeCli("v1 v2 --languages de en --translate cz".split()).run(),)

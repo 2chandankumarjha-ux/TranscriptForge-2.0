@@ -125,11 +125,12 @@ class _TextBasedFormatter(TextFormatter):
         >>> self._seconds_to_timestamp(6.93)
         '00:00:06.930'
         """
-        time = float(time)
-        hours_float, remainder = divmod(time, 3600)
-        mins_float, secs_float = divmod(remainder, 60)
-        hours, mins, secs = int(hours_float), int(mins_float), int(secs_float)
-        ms = int(round((time - int(time)) * 1000, 2))
+        # work on whole milliseconds so that carries are handled (1.9999 -> 00:00:02.000,
+        # never 00:00:01.1000)
+        total_ms = int(round(max(float(time), 0.0) * 1000))
+        hours, remainder = divmod(total_ms, 3_600_000)
+        mins, remainder = divmod(remainder, 60_000)
+        secs, ms = divmod(remainder, 1000)
         return self._format_timestamp(hours, mins, secs, ms)
 
     def format_transcript(self, transcript: FetchedTranscript, **kwargs) -> str:

@@ -4,7 +4,7 @@ from urllib.parse import parse_qs, urlparse
 
 from ._errors import InvalidVideoId
 
-_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_VIDEO_ID_RE = re.compile(r"[A-Za-z0-9_-]{11}")
 _YOUTUBE_DOMAINS = ("youtube.com", "youtu.be", "youtube-nocookie.com")
 _PATH_PREFIXES = ("embed", "shorts", "live", "v", "vi")
 _URL_IN_TEXT_RE = re.compile(r"(?:https?://|www\.)[^\s<>\"')\]]+", re.IGNORECASE)
@@ -12,7 +12,7 @@ _URL_IN_TEXT_RE = re.compile(r"(?:https?://|www\.)[^\s<>\"')\]]+", re.IGNORECASE
 
 def is_video_id(value: str) -> bool:
     """True if `value` has the shape of a YouTube video id (11 chars: A-Z a-z 0-9 _ -)."""
-    return bool(_VIDEO_ID_RE.match(value or ""))
+    return bool(_VIDEO_ID_RE.fullmatch(value or ""))
 
 
 def _is_youtube_host(host: Optional[str]) -> bool:

@@ -14,7 +14,13 @@ from .proxies import GenericProxyConfig, ProxyConfig, WebshareProxyConfig
 from .search import search_transcript
 from .segments import chunk_by_chars
 from .sources import expand_source, is_listing_url
-from .utils import format_timestamp, normalize_video_id, timestamp_url, unique
+from .utils import (
+    extract_playlist_id,
+    format_timestamp,
+    normalize_video_id,
+    timestamp_url,
+    unique,
+)
 
 from ._api import TranscriptForge, FetchedTranscript, TranscriptList
 
@@ -22,13 +28,12 @@ from ._api import TranscriptForge, FetchedTranscript, TranscriptList
 class TranscriptForgeCli:
     def __init__(self, args: List[str]):
         self._args = args
+        #: 0 on success, 1 if any video/source failed (use as the process exit code)
+        self.exit_code = 0
 
     # ------------------------------------------------------------------ run
     def run(self) -> str:
         parsed_args = self._parse_args()
-
-        if parsed_args.exclude_manually_created and parsed_args.exclude_generated:
-            return ""
 
         proxy_config: Optional[ProxyConfig] = None
         if parsed_args.http_proxy != "" or parsed_args.https_proxy != "":
@@ -73,6 +78,7 @@ class TranscriptForgeCli:
                     exceptions.append(exception)
             sections = [str(exception) for exception in exceptions]
             sections.extend(str(transcript_list) for transcript_list in listings)
+            self.exit_code = 1 if exceptions else 0
             return "\n\n".join(sections)
 
         # ---- fetch (sequential by default, parallel with --workers N)
@@ -99,6 +105,7 @@ class TranscriptForgeCli:
         if parsed_args.clean:
             transcripts = [clean_transcript(t) for t in transcripts]
 
+        self.exit_code = 1 if exceptions else 0
         print_sections = [str(exception) for exception in exceptions]
         wants_json = parsed_args.format == "json"
 
@@ -180,7 +187,13 @@ class TranscriptForgeCli:
                         raw_items.append(line)
             except OSError as exception:
                 exceptions.append(exception)
-        raw_items.extend(parsed_args.playlist or [])
+        for url in parsed_args.playlist or []:
+            # a watch?v=...&list=PL... link was given for --playlist: expand the list
+            if not is_listing_url(url) and extract_playlist_id(url):
+                url = "https://www.youtube.com/playlist?list=" + extract_playlist_id(
+                    url
+                )
+            raw_items.append(url)
 
         video_ids: List[str] = []
         for item in raw_items:
@@ -574,6 +587,33 @@ class TranscriptForgeCli:
         args = parser.parse_args(self._args)
         if not args.video_ids and not args.file and not args.playlist:
             parser.error("give at least one video id/URL, or use --file / --playlist")
+        if args.exclude_generated and args.exclude_manually_created:
+            parser.error(
+                "--exclude-generated and --exclude-manually-created cannot be "
+                "combined: that would exclude every transcript"
+            )
+        if (args.webshare_proxy_username is None) != (
+            args.webshare_proxy_password is None
+        ):
+            parser.error(
+                "--webshare-proxy-username and --webshare-proxy-password must be "
+                "given together"
+            )
+        if args.proxy_file and not Path(args.proxy_file).is_file():
+            parser.error("--proxy-file: no such file: {}".format(args.proxy_file))
+        if args.chunks < 0:
+            parser.error("--chunks must be >= 0")
+        if args.chunks and not 0 <= args.chunk_overlap < args.chunks:
+            parser.error("--chunk-overlap must be >= 0 and smaller than --chunks")
+        for name in ("summary", "context", "retries"):
+            if getattr(args, name) < 0:
+                parser.error("--{} must be >= 0".format(name))
+        if args.limit is not None and args.limit < 0:
+            parser.error("--limit must be >= 0")
+        if args.workers < 1:
+            parser.error("--workers must be >= 1")
+        if args.delay < 0:
+            parser.error("--delay must be >= 0")
         return self._sanitize_video_ids(args)
 
     def _sanitize_video_ids(self, args):

@@ -7,10 +7,11 @@ from typing import List, Optional
 from ._transcripts import FetchedTranscript, FetchedTranscriptSnippet
 
 # [Music], [Applause], [संगीत], [तालियाँ] ... (short bracketed sound descriptions)
-_SOUND_TAG_RE = re.compile(r"\[[^\[\]]{1,60}\]")
+# not when glued to a word on the left (arr[i], text[1]): that is not a sound description
+_SOUND_TAG_RE = re.compile(r"(?<![\w\u0900-\u097F])\[[^\[\]]{1,60}\]")
 _MUSIC_NOTES_RE = re.compile(r"[\u266a\u266b\u266c\u2669]+")
 _SPEAKER_MARKER_RE = re.compile(r"(?:^|\s)>>+\s*|^-\s+")
-_HTML_TAG_RE = re.compile(r"</?[A-Za-z][^>]*>")
+_HTML_TAG_RE = re.compile(r"</?[A-Za-z][^<>]*>")
 _WHITESPACE_RE = re.compile(r"\s+")
 # zero-width space / BOM. NOTE: ZWJ (U+200D) and ZWNJ (U+200C) are deliberately kept,
 # because Devanagari conjuncts (e.g. क्‍ष) depend on them.

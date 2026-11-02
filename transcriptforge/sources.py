@@ -36,16 +36,17 @@ def is_listing_url(value: str) -> bool:
 def _listing_page_url(value: str) -> str:
     parsed = _parse(value.strip())
     segments = [s for s in parsed.path.split("/") if s]
-    url = "https://www.youtube.com" + parsed.path.rstrip("/")
-    if parsed.query and segments and segments[0] == "playlist":
-        return url + "?" + parsed.query
-    if (
-        segments
-        and segments[-1] not in ("videos", "streams", "shorts")
-        and segments[0] != "playlist"
-    ):
-        url += "/videos"
-    return url
+    if segments and segments[0] == "playlist":
+        url = "https://www.youtube.com/playlist"
+        return url + "?" + parsed.query if parsed.query else url
+    # A channel is "/@handle" (1 segment) or "/channel|c|user/<name>" (2 segments).
+    # Anything after that is a tab (featured, about, playlists, ...): only the video
+    # listing tabs are kept, every other tab is replaced by "/videos".
+    root = segments[:1] if segments and segments[0].startswith("@") else segments[:2]
+    tab = segments[len(root)] if len(segments) > len(root) else "videos"
+    if tab not in ("videos", "streams", "shorts"):
+        tab = "videos"
+    return "https://www.youtube.com/" + "/".join(root + [tab])
 
 
 def expand_source(
@@ -68,6 +69,9 @@ def expand_source(
             return [extract_video_id(source)]
         except InvalidVideoId:
             return [source]
+
+    if limit is not None and limit < 0:
+        raise ValueError("limit must be >= 0 (0 means no limit)")
 
     session = http_client or Session()
     session.headers.setdefault("Accept-Language", "en-US")

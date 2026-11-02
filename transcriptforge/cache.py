@@ -110,7 +110,7 @@ class TranscriptCache:
             return transcript_from_dict(payload["transcript"])
         except FileNotFoundError:
             return None
-        except (ValueError, KeyError, TypeError, OSError):
+        except (ValueError, KeyError, TypeError, AttributeError, OSError):
             # corrupt entry: behave like a miss and let the next set() overwrite it
             return None
 

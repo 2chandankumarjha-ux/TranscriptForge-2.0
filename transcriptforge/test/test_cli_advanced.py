@@ -220,10 +220,10 @@ class TestAdvancedCli(TestCase):
         out = run("https://youtu.be/%s" % VID, "--list-transcripts")
         self.assertIn("transcripts are available", out)
 
-    def test_exclude_both_returns_empty(self):
-        self.assertEqual(
-            run(VID, "--exclude-generated", "--exclude-manually-created"), ""
-        )
+    def test_exclude_both_is_a_usage_error(self):
+        with self.assertRaises(SystemExit) as raised:
+            run(VID, "--exclude-generated", "--exclude-manually-created")
+        self.assertEqual(raised.exception.code, 2)
 
     def test_preserve_formatting_flag(self):
         out = run(VID, "--preserve-formatting", "--format", "text")
