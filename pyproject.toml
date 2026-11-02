@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcriptforge"
+version = "2.0.0"
+description = "Advanced YouTube transcript toolkit: URLs, playlists, batch + parallel downloads, caching, search, analytics, Hindi/Devanagari-aware processing and many export formats. No API key, no headless browser."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = ["requests", "defusedxml>=0.7.1"]
+keywords = [
+    "youtube", "transcript", "transcripts", "subtitles", "captions", "cli",
+    "youtube-transcripts", "batch", "playlist", "hindi", "srt", "webvtt",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+"Upstream project" = "https://github.com/jdepoix/youtube-transcript-api"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "coverage>=7", "responses>=0.25"]
+dev = ["ruff>=0.6"]
+
+[project.scripts]
+transcriptforge = "transcriptforge.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["transcriptforge*"]
+exclude = ["transcriptforge.test*"]
+
+[tool.setuptools.package-data]
+transcriptforge = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["transcriptforge"]
+
+[tool.coverage.run]
+source = ["transcriptforge"]
+
+[tool.coverage.report]
+omit = ["*/__main__.py", "transcriptforge/test/*"]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+
+[tool.ruff]
+target-version = "py38"
+
+[tool.ruff.lint]
+# the classic defaults, pinned so that results don't change with the ruff version
+select = ["E4", "E7", "E9", "F"]
